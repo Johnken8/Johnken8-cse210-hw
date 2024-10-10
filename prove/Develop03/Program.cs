@@ -11,19 +11,30 @@ class Program
         Scripture scripture = GetRandomScripture(scriptures);
         
         int hiddenWordCount = 0;
+        bool allWordsHidden = false;
 
         while (true)
         {
             Console.Clear();
             scripture.Display();
-            Console.WriteLine("Press Enter to hide a word or type 'quit' to exit.");
+            Console.WriteLine("Press Enter to hide a word, type 'reset' to load a new scripture, or type 'quit' to exit.");
 
-            string input = Console.ReadLine();
-            if (input.ToLower() == "quit")
+            string input = Console.ReadLine().ToLower();
+            if (input == "quit")
                 break;
 
+            if (input == "reset")
+            {
+                // Load a new random scripture and reset the hidden word count
+                scripture = GetRandomScripture(scriptures);
+                hiddenWordCount = 0;
+                continue;
+            }
+
             // Incrementally hide words
-            if (!scripture.HideNextWord())
+            allWordsHidden = scripture.HideNextWord();
+
+            if (allWordsHidden)
             {
                 Console.WriteLine("All words are hidden! Press Enter to exit.");
                 Console.ReadLine();
@@ -37,12 +48,25 @@ class Program
 
     static List<Scripture> LoadScriptures()
     {
-        // Load scriptures from a file (to be implemented)
+        // For now, returning a static list of scriptures
+        return new List<Scripture>
+        {
+            new Scripture(new Reference("John", 3, new List<int> { 16 }), new List<Word>
+            {
+                new Word("For"), new Word("God"), new Word("so"), new Word("loved"), new Word("the"), new Word("world")
+            }),
+            new Scripture(new Reference("Genesis", 1, new List<int> { 1 }), new List<Word>
+            {
+                new Word("In"), new Word("the"), new Word("beginning"), new Word("God"), new Word("created"), new Word("the"), new Word("heavens"), new Word("and"), new Word("the"), new Word("earth")
+            })
+        };
     }
 
     static Scripture GetRandomScripture(List<Scripture> scriptures)
     {
-        // Randomly select a scripture (to be implemented)
+        Random random = new Random();
+        int index = random.Next(scriptures.Count);
+        return scriptures[index];
     }
 }
 
@@ -51,7 +75,7 @@ class Scripture
 {
     private Reference _reference;
     private List<Word> _words;
-    private int _currentWordIndex = 0; // Track which word to hide next
+    private int _currentWordIndex = 0;
 
     public Scripture(Reference reference, List<Word> words)
     {
@@ -75,9 +99,9 @@ class Scripture
         {
             _words[_currentWordIndex].Hide();
             _currentWordIndex++;
-            return true; // Successfully hidden a word
+            return false; // Words are still remaining
         }
-        return false; // No more words to hide
+        return true; // All words hidden
     }
 }
 
@@ -97,7 +121,6 @@ class Reference
 
     public override string ToString()
     {
-        // Return formatted reference
         return $"{_book} {_chapter}:{string.Join(",", _verses)}";
     }
 }
