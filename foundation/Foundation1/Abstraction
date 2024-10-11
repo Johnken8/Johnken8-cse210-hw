@@ -1,0 +1,113 @@
+using System;
+using System.Collections.Generic;
+
+// Comment Class
+public class Comment
+{
+    // Member variables
+    private string _commenterName;
+    private string _commentText;
+
+    // Constructor to initialize comment details
+    public Comment(string commenterName, string commentText)
+    {
+        _commenterName = commenterName;
+        _commentText = commentText;
+    }
+
+    // Method to get the commenter's name
+    public string GetCommenterName()
+    {
+        return _commenterName;
+    }
+
+    // Method to get the comment text
+    public string GetCommentText()
+    {
+        return _commentText;
+    }
+}
+
+// Video Class
+public class Video
+{
+    // Member variables
+    private string _title;
+    private string _author;
+    private int _length; // length in seconds
+    private List<Comment> _comments; // List of comments
+
+    // Constructor to initialize video details
+    public Video(string title, string author, int length)
+    {
+        _title = title;
+        _author = author;
+        _length = length;
+        _comments = new List<Comment>(); // Initialize the comments list
+    }
+
+    // Method to add a comment to the video
+    public void AddComment(Comment comment)
+    {
+        _comments.Add(comment);
+    }
+
+    // Method to get the number of comments
+    public int GetNumberOfComments()
+    {
+        return _comments.Count;
+    }
+
+    // Method to display video information and comments
+    public void DisplayVideoInfo()
+    {
+        Console.WriteLine($"Title: {_title}");
+        Console.WriteLine($"Author: {_author}");
+        Console.WriteLine($"Length: {_length} seconds");
+        Console.WriteLine($"Number of Comments: {GetNumberOfComments()}");
+
+        Console.WriteLine("Comments:");
+        foreach (Comment comment in _comments)
+        {
+            Console.WriteLine($"- {comment.GetCommenterName()}: {comment.GetCommentText()}");
+        }
+
+        Console.WriteLine(); // Blank line for better readability
+    }
+}
+
+// Main Program
+class Program
+{
+    static void Main(string[] args)
+    {
+        // Creating videos
+        Video video1 = new Video("Learning C# Basics", "John Doe", 600);
+        Video video2 = new Video("Advanced C# Techniques", "Jane Smith", 900);
+        Video video3 = new Video("C# Design Patterns", "Emily Johnson", 1200);
+
+        // Adding comments to video1
+        video1.AddComment(new Comment("Alice", "Great tutorial!"));
+        video1.AddComment(new Comment("Bob", "Very helpful, thanks!"));
+        video1.AddComment(new Comment("Charlie", "Can you explain more about variables?"));
+
+        // Adding comments to video2
+        video2.AddComment(new Comment("David", "This was really advanced, but I followed along!"));
+        video2.AddComment(new Comment("Eva", "Perfect examples."));
+        video2.AddComment(new Comment("Frank", "Thanks for the great content."));
+
+        // Adding comments to video3
+        video3.AddComment(new Comment("Grace", "I love the way you explained design patterns!"));
+        video3.AddComment(new Comment("Hannah", "Can you do a video on SOLID principles?"));
+        video3.AddComment(new Comment("Ivy", "This is exactly what I was looking for."));
+
+        // Storing videos in a list
+        List<Video> videos = new List<Video> { video1, video2, video3 };
+
+        // Iterating through the list of videos and displaying their information
+        foreach (Video video in videos)
+        {
+            video.DisplayVideoInfo();
+        }
+    }
+}
