@@ -5,28 +5,37 @@ using System.Linq;
 
 public class Journal
 {
-    private List<Entry> _entries = new List<Entry>(); // Changed to underscore convention
-    private List<string> _prompts = new List<string> // Changed to underscore convention
-    { 
-        "What did you accomplish today?", 
-        "What are you grateful for?", 
-        "What challenges did you face?" 
+    private List<Entry> _entries = new List<Entry>(); // List of entries
+    private List<string> _prompts = new List<string>
+    {
+        "What did you accomplish today?",
+        "What are you grateful for?",
+        "What challenges did you face?",
+        "What is one thing you learned today?",
+        "What are your goals for tomorrow?"
     };
 
-    // Method to add a new entry to the journal
-    public void AddEntry(string text)
+    // Method to add a new entry to the journal with optional tags
+    public void AddEntry(string text, string tags = "")
     {
         string randomPrompt = GetRandomPrompt();
-        Entry newEntry = new Entry(randomPrompt, text);
+        Entry newEntry = new Entry(randomPrompt, text, tags);
         _entries.Add(newEntry);
     }
 
     // Method to display all journal entries
     public void DisplayEntries()
     {
-        foreach (var entry in _entries)
+        if (_entries.Count == 0)
         {
-            Console.WriteLine(entry.DisplayEntry());
+            Console.WriteLine("No entries to display.");
+        }
+        else
+        {
+            foreach (var entry in _entries)
+            {
+                Console.WriteLine(entry.DisplayEntry());
+            }
         }
     }
 
@@ -44,7 +53,7 @@ public class Journal
         {
             foreach (var entry in _entries)
             {
-                sw.WriteLine($"{entry.EntryDate},{entry.Prompt},{entry.Text}");
+                sw.WriteLine($"{entry.EntryDate},{entry.Prompt},{entry.Text},{entry.Tags}");
             }
         }
         Console.WriteLine("Journal saved successfully.");
@@ -55,6 +64,7 @@ public class Journal
     {
         if (File.Exists(filename))
         {
+            _entries.Clear(); // Clear current entries before loading new ones
             string[] lines = File.ReadAllLines(filename);
             foreach (string line in lines)
             {
@@ -62,7 +72,8 @@ public class Journal
                 DateTime date = DateTime.Parse(parts[0]);
                 string prompt = parts[1];
                 string text = parts[2];
-                _entries.Add(new Entry(prompt, text) { EntryDate = date });
+                string tags = parts.Length > 3 ? parts[3] : ""; // Handle cases without tags
+                _entries.Add(new Entry(prompt, text, tags) { EntryDate = date });
             }
             Console.WriteLine("Journal loaded successfully.");
         }
@@ -75,8 +86,9 @@ public class Journal
     // Method to search entries by a keyword
     public void SearchEntries(string keyword)
     {
-        var foundEntries = _entries.Where(e => e.Text.Contains(keyword, StringComparison.OrdinalIgnoreCase) || 
-                                              e.Prompt.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
+        var foundEntries = _entries.Where(e => e.Text.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                                               e.Prompt.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                                               e.Tags.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
         if (foundEntries.Count == 0)
         {
             Console.WriteLine("No entries found matching the keyword.");
@@ -87,6 +99,40 @@ public class Journal
             {
                 Console.WriteLine(entry.DisplayEntry());
             }
+        }
+    }
+
+    // Method to edit an existing entry
+    public void EditEntry(string date)
+    {
+        var entry = _entries.FirstOrDefault(e => e.EntryDate.ToShortDateString() == date);
+        if (entry != null)
+        {
+            Console.WriteLine("Editing Entry: ");
+            Console.WriteLine(entry.DisplayEntry());
+            Console.WriteLine("Enter the new text for this entry: ");
+            string newText = Console.ReadLine();
+            entry.Text = newText;
+            Console.WriteLine("Entry updated successfully.");
+        }
+        else
+        {
+            Console.WriteLine("No entry found for the given date.");
+        }
+    }
+
+    // Method to delete an entry
+    public void DeleteEntry(string date)
+    {
+        var entry = _entries.FirstOrDefault(e => e.EntryDate.ToShortDateString() == date);
+        if (entry != null)
+        {
+            _entries.Remove(entry);
+            Console.WriteLine("Entry deleted successfully.");
+        }
+        else
+        {
+            Console.WriteLine("No entry found for the given date.");
         }
     }
 }
