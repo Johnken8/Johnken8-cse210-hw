@@ -1,78 +1,116 @@
-# Define the Comment class
-class Comment:
-    def __init__(self, commenter_name, comment_text):
-        self.commenter_name = commenter_name
-        self.comment_text = comment_text
+using System;
+using System.Collections.Generic;
 
-# Define the Video class
-class Video:
-    def __init__(self, title, author, length):
-        self.title = title
-        self.author = author
-        self.length = length
-        self.comments = []
+public class Comment
+{
+    private string _commenterName;
+    private string _commentText;
 
-    # Method to add comments to the video
-    def add_comment(self, comment):
-        self.comments.append(comment)
+    public Comment(string commenterName, string commentText)
+    {
+        _commenterName = commenterName;
+        _commentText = commentText;
+    }
 
-    # Method to get the number of comments on the video
-    def get_number_of_comments(self):
-        return len(self.comments)
+    public string GetCommenterName()
+    {
+        return _commenterName;
+    }
 
-    # Method to display the video details along with the comments
-    def display_video_info(self):
-        print(f"Title: {self.title}")
-        print(f"Author: {self.author}")
-        print(f"Length: {self.length} minutes")
-        print(f"Number of Comments: {self.get_number_of_comments()}")
-        print("Comments:")
-        for comment in self.comments:
-            print(f"- {comment.commenter_name}: {comment.comment_text}")
+    public string GetCommentText()
+    {
+        return _commentText;
+    }
+}
 
-# Main program to create videos and comments
-def main():
-    # Create 3 Video objects
-    video1 = Video("Python Basics", "John Doe", 10)
-    video2 = Video("Advanced Python", "Jane Smith", 15)
-    video3 = Video("Python OOP", "Alice Johnson", 12)
+public class Video
+{
+    private string _title;
+    private string _author;
+    private int _lengthInSeconds;
+    private List<Comment> _comments;
 
-    # Create comments for each video
-    comment1_v1 = Comment("User1", "Great video, very helpful!")
-    comment2_v1 = Comment("User2", "Clear explanation, thanks!")
-    comment3_v1 = Comment("User3", "I learned a lot from this.")
+    public Video(string title, string author, int lengthInSeconds)
+    {
+        _title = title;
+        _author = author;
+        _lengthInSeconds = lengthInSeconds;
+        _comments = new List<Comment>();
+    }
 
-    comment1_v2 = Comment("User4", "I was confused at first, but now I get it.")
-    comment2_v2 = Comment("User5", "Very detailed, great work!")
-    comment3_v2 = Comment("User6", "Good pacing and examples.")
+    public void AddComment(Comment comment)
+    {
+        _comments.Add(comment);
+    }
 
-    comment1_v3 = Comment("User7", "OOP is always tricky, but this helped.")
-    comment2_v3 = Comment("User8", "Well done, I understand classes now.")
-    comment3_v3 = Comment("User9", "Thanks for the clear explanation!")
+    public int GetNumberOfComments()
+    {
+        return _comments.Count;
+    }
 
-    # Add comments to video1
-    video1.add_comment(comment1_v1)
-    video1.add_comment(comment2_v1)
-    video1.add_comment(comment3_v1)
+    public string GetTitle()
+    {
+        return _title;
+    }
 
-    # Add comments to video2
-    video2.add_comment(comment1_v2)
-    video2.add_comment(comment2_v2)
-    video2.add_comment(comment3_v2)
+    public string GetAuthor()
+    {
+        return _author;
+    }
 
-    # Add comments to video3
-    video3.add_comment(comment1_v3)
-    video3.add_comment(comment2_v3)
-    video3.add_comment(comment3_v3)
+    public int GetLength()
+    {
+        return _lengthInSeconds;
+    }
 
-    # Store the video objects in a list
-    videos = [video1, video2, video3]
+    public List<Comment> GetComments()
+    {
+        return _comments;
+    }
+}
 
-    # Display information for each video
-    for video in videos:
-        video.display_video_info()
-        print()  # Print an empty line between video information for better readability
+public class Program
+{
+    public static void Main()
+    {
+        // Create video objects
+        Video pythonTutorial = new Video("Python Programming for Beginners", "CodeMaster", 600);
+        Video webDevelopment = new Video("Full Stack Web Development", "TechPro", 900);
+        Video dataScience = new Video("Introduction to Data Science", "DataExpert", 750);
 
-# Run the main program
-if __name__ == "__main__":
-    main()
+        // Create and add comments for first video
+        pythonTutorial.AddComment(new Comment("JohnDev", "This helped me understand Python basics!"));
+        pythonTutorial.AddComment(new Comment("LearnerX", "Great explanations of variables and functions."));
+        pythonTutorial.AddComment(new Comment("PythonNewbie", "Can you make more videos on OOP?"));
+
+        // Create and add comments for second video
+        webDevelopment.AddComment(new Comment("WebBuilder", "Excellent coverage of frontend frameworks!"));
+        webDevelopment.AddComment(new Comment("CodeStudent", "The backend section was very informative."));
+        webDevelopment.AddComment(new Comment("FullStackDev", "Would love to see more about API design."));
+
+        // Create and add comments for third video
+        dataScience.AddComment(new Comment("DataAnalyst", "Clear explanation of statistical concepts."));
+        dataScience.AddComment(new Comment("MLEnthusiast", "The machine learning intro was perfect."));
+        dataScience.AddComment(new Comment("BigDataPro", "Please cover more pandas tutorials."));
+
+        // Create list of videos
+        List<Video> videos = new List<Video> { pythonTutorial, webDevelopment, dataScience };
+
+        // Display information for each video
+        foreach (Video video in videos)
+        {
+            Console.WriteLine("Video Details:");
+            Console.WriteLine($"Title: {video.GetTitle()}");
+            Console.WriteLine($"Author: {video.GetAuthor()}");
+            Console.WriteLine($"Length: {video.GetLength()} seconds");
+            Console.WriteLine($"Number of comments: {video.GetNumberOfComments()}");
+            Console.WriteLine("\nComments:");
+
+            foreach (Comment comment in video.GetComments())
+            {
+                Console.WriteLine($"- {comment.GetCommenterName()}: {comment.GetCommentText()}");
+            }
+            Console.WriteLine("\n-------------------\n");
+        }
+    }
+}
