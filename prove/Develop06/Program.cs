@@ -33,10 +33,13 @@ public abstract class Goal
     // Virtual method that can be overridden by derived classes
     public virtual void CreateGoal(string[] parts)
     {
-        _name = parts[1];
-        _description = parts[2];
-        _points = int.Parse(parts[3]);
-        _isComplete = bool.Parse(parts[4]);
+        if (parts.Length >= 4)
+        {
+            _name = parts[0];
+            _description = parts[1];
+            _points = int.Parse(parts[2]);
+            _isComplete = bool.Parse(parts[3]);
+        }
     }
 }
 
@@ -110,10 +113,13 @@ public class ChecklistGoal : Goal
 
     public override void CreateGoal(string[] parts)
     {
-        base.CreateGoal(parts);
-        _target = int.Parse(parts[5]);
-        _bonus = int.Parse(parts[6]);
-        _timesCompleted = int.Parse(parts[7]);
+        if (parts.Length >= 7)
+        {
+            base.CreateGoal(parts);
+            _target = int.Parse(parts[4]);
+            _bonus = int.Parse(parts[5]);
+            _timesCompleted = int.Parse(parts[6]);
+        }
     }
 
     public override int RecordEvent()
@@ -158,10 +164,13 @@ public class ProgressGoal : Goal
 
     public override void CreateGoal(string[] parts)
     {
-        base.CreateGoal(parts);
-        _targetProgress = int.Parse(parts[5]);
-        _progressPoints = int.Parse(parts[6]);
-        _currentProgress = int.Parse(parts[7]);
+        if (parts.Length >= 7)
+        {
+            base.CreateGoal(parts);
+            _targetProgress = int.Parse(parts[4]);
+            _progressPoints = int.Parse(parts[5]);
+            _currentProgress = int.Parse(parts[6]);
+        }
     }
 
     public override int RecordEvent()
@@ -180,8 +189,8 @@ public class ProgressGoal : Goal
 
     public override string GetDisplayString()
     {
-        int percentage = (_currentProgress * 100) / _targetProgress;
-        return $"[{(IsComplete() ? "X" : " ")}] {GetName()} ({GetDescription()}) -- Progress: {percentage}% ({_currentProgress}/{_targetProgress})";
+        double percentage = (_currentProgress * 100.0) / _targetProgress;
+        return $"[{(IsComplete() ? "X" : " ")}] {GetName()} ({GetDescription()}) -- Progress: {percentage:F1}% ({_currentProgress}/{_targetProgress})";
     }
 
     public override string GetStringRepresentation()
@@ -313,67 +322,92 @@ public class Program
 
     private static void SaveGoals()
     {
-        Console.Write("\nWhat is the filename for the goal file? ");
-        string filename = Console.ReadLine();
-
-        using (StreamWriter outputFile = new StreamWriter(filename))
+        try
         {
-            outputFile.WriteLine(_score);
-            outputFile.WriteLine(_level);
-            foreach (Goal goal in _goals)
+            Console.Write("\nWhat is the filename for the goal file? ");
+            string filename = Console.ReadLine();
+
+            using (StreamWriter outputFile = new StreamWriter(filename))
             {
-                outputFile.WriteLine(goal.GetStringRepresentation());
+                outputFile.WriteLine(_score);
+                outputFile.WriteLine(_level);
+                foreach (Goal goal in _goals)
+                {
+                    outputFile.WriteLine(goal.GetStringRepresentation());
+                }
             }
+            Console.WriteLine("Goals saved successfully!");
         }
-        Console.WriteLine("Goals saved successfully!");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving goals: {ex.Message}");
+        }
     }
 
     private static void LoadGoals()
     {
-        Console.Write("\nWhat is the filename for the goal file? ");
-        string filename = Console.ReadLine();
-
-        if (!File.Exists(filename))
+        try
         {
-            Console.WriteLine("File not found.");
-            return;
-        }
+            Console.Write("\nWhat is the filename for the goal file? ");
+            string filename = Console.ReadLine();
 
-        string[] lines = File.ReadAllLines(filename);
-        _goals.Clear();
-        
-        _score = int.Parse(lines[0]);
-        _level = int.Parse(lines[1]);
-
-        for (int i = 2; i < lines.Length; i++)
-        {
-            string[] parts = lines[i].Split(":");
-            string[] goalData = parts[1].Split(",");
-
-            Goal goal = null;
-            switch (parts[0])
+            if (!File.Exists(filename))
             {
-                case "SimpleGoal":
-                    goal = new SimpleGoal("", "", 0);
-                    break;
-                case "EternalGoal":
-                    goal = new EternalGoal("", "", 0);
-                    break;
-                case "ChecklistGoal":
-                    goal = new ChecklistGoal("", "", 0, 0, 0);
-                    break;
-                case "ProgressGoal":
-                    goal = new ProgressGoal("", "", 0, 0, 0);
-                    break;
+                Console.WriteLine("File not found.");
+                return;
             }
 
-            if (goal != null)
+            string[] lines = File.ReadAllLines(filename);
+            if (lines.Length < 2)
             {
-                goal.CreateGoal(goalData);
-                _goals.Add(goal);
+                Console.WriteLine("Invalid file format.");
+                return;
             }
+
+            _goals.Clear();
+            _score = int.Parse(lines[0]);
+            _level = int.Parse(lines[1]);
+
+            for (int i = 2; i < lines.Length; i++)
+            {
+                string[] parts = lines[i].Split(":");
+                if (parts.Length != 2)
+                {
+                    Console.WriteLine($"Skipping invalid line: {lines[i]}");
+                    continue;
+                }
+
+                string[] goalData = parts[1].Split(",");
+                Goal goal = null;
+
+                switch (parts[0])
+                {
+                    case "SimpleGoal":
+                        goal = new SimpleGoal("", "", 0);
+                        break;
+                    case "EternalGoal":
+                        goal = new EternalGoal("", "", 0);
+                        break;
+                    case "ChecklistGoal":
+                        goal = new ChecklistGoal("", "", 0, 0, 0);
+                        break;
+                    case "ProgressGoal":
+                        goal = new ProgressGoal("", "", 0, 0, 0);
+                        break;
+                }
+
+                if (goal != null)
+                {
+                    goal.CreateGoal(goalData);
+                    _goals.Add(goal);
+                }
+            }
+            Console.WriteLine("Goals loaded successfully!");
         }
-        Console.WriteLine("Goals loaded successfully!");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading goals: {ex.Message}");
+        }
     }
 
     private static void RecordEvent()
@@ -390,24 +424,35 @@ public class Program
             Console.WriteLine($"{i + 1}. {_goals[i].GetName()}");
         }
 
-        Console.Write("Which goal did you accomplish? ");
-        int index = int.Parse(Console.ReadLine()) - 1;
-
-        if (index >= 0 && index < _goals.Count)
+        try
         {
-            int pointsEarned = _goals[index].RecordEvent();
-            _score += pointsEarned;
-            
-            // Level up system
-            int newLevel = _levelThresholds.Count(t => _score >= t);
-            if (newLevel > _level)
-            {
-                Console.WriteLine($"\n🎉 LEVEL UP! You've reached level {newLevel}! 🎉");
-                _level = newLevel;
-            }
+            Console.Write("Which goal did you accomplish? ");
+            int index = int.Parse(Console.ReadLine()) - 1;
 
-            Console.WriteLine($"\nCongratulations! You have earned {pointsEarned} points!");
-            Console.WriteLine($"You now have {_score} points!");
+            if (index >= 0 && index < _goals.Count)
+            {
+                int pointsEarned = _goals[index].RecordEvent();
+                _score += pointsEarned;
+                
+                // Level up system
+                int newLevel = _levelThresholds.Count(t => _score >= t);
+                if (newLevel > _level)
+                {
+                    Console.WriteLine($"\n🎉 LEVEL UP! You've reached level {newLevel}! 🎉");
+                    _level = newLevel;
+                }
+
+                Console.WriteLine($"\nCongratulations! You have earned {pointsEarned} points!");
+                Console.WriteLine($"You now have {_score} points!");
+            }
+            else
+            {
+                Console.WriteLine("Invalid goal number.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error recording event: {ex.Message}");
         }
     }
 }
@@ -418,6 +463,8 @@ Exceeding Requirements:
 2. Implemented a level system with different thresholds (shown in points display)
 3. Added celebration animation for level-ups
 4. Enhanced display formatting with clear visual indicators
-5. Added error handling for file operations and user input
+5. Added comprehensive error handling for file operations and user input
 6. Implemented a more sophisticated points system with progress tracking
-*/ 
+7. Added decimal precision for progress percentage display
+8. Improved data validation and error messaging throughout the program
+*/

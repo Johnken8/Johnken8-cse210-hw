@@ -2,14 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.IO;
-using System.Linq;
 
-// Base class for all activities
 public abstract class Activity
 {
     protected string _name;
     protected string _description;
     protected int _duration;
+    protected static Random _random = new Random();
+
+    public int GetDuration()
+    {
+        return _duration;
+    }
 
     public Activity(string name, string description)
     {
@@ -19,35 +23,64 @@ public abstract class Activity
 
     public void Start()
     {
+        DisplayStartingMessage();
+        SetDuration();
+        PrepareToBegin();
+    }
+
+    private void DisplayStartingMessage()
+    {
+        Console.Clear();
         Console.WriteLine($"Welcome to the {_name}.");
+        Console.WriteLine();
         Console.WriteLine(_description);
-        Console.Write("How long, in seconds, would you like for your session? ");
-        _duration = int.Parse(Console.ReadLine());
+        Console.WriteLine();
+    }
+
+    private void SetDuration()
+    {
+        while (true)
+        {
+            Console.Write("How long, in seconds, would you like for your session? ");
+            if (int.TryParse(Console.ReadLine(), out int duration) && duration > 0)
+            {
+                _duration = duration;
+                break;
+            }
+            Console.WriteLine("Please enter a valid positive number.");
+        }
+    }
+
+    private void PrepareToBegin()
+    {
+        Console.Clear();
         Console.WriteLine("Get ready...");
-        ShowSpinner(3);
+        ShowSpinner(5);
     }
 
     public void End()
     {
-        Console.WriteLine("Well done!");
+        Console.WriteLine();
+        Console.WriteLine("Well done!!");
         ShowSpinner(3);
+        Console.WriteLine();
         Console.WriteLine($"You have completed another {_duration} seconds of the {_name}.");
         ShowSpinner(3);
     }
 
     protected void ShowSpinner(int seconds)
     {
-        List<string> spinnerStrings = new List<string> { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" };
+        List<string> spinnerChars = new List<string> { "|", "/", "-", "\\" };
         DateTime endTime = DateTime.Now.AddSeconds(seconds);
 
         int i = 0;
         while (DateTime.Now < endTime)
         {
-            string s = spinnerStrings[i];
-            Console.Write(s);
-            Thread.Sleep(100);
+            string currentSpin = spinnerChars[i];
+            Console.Write(currentSpin);
+            Thread.Sleep(250);
             Console.Write("\b \b");
-            i = (i + 1) % spinnerStrings.Count;
+            i = (i + 1) % spinnerChars.Count;
         }
     }
 
@@ -64,34 +97,25 @@ public abstract class Activity
     public abstract void Run();
 }
 
-// Breathing activity
 public class BreathingActivity : Activity
 {
-    public BreathingActivity() : base("Breathing Activity", "This activity will help you relax by walking you through breathing in and out slowly. Clear your mind and focus on your breathing.")
+    public BreathingActivity() : base("Breathing Activity", 
+        "This activity will help you relax by walking you through breathing in and out slowly. Clear your mind and focus on your breathing.")
     {
     }
 
     public override void Run()
     {
         Start();
+        
         DateTime endTime = DateTime.Now.AddSeconds(_duration);
-
+        
         while (DateTime.Now < endTime)
         {
-            Console.Write("Breathe in");
-            for (int i = 0; i < 4; i++)
-            {
-                Thread.Sleep(1000);
-                Console.Write(".");
-            }
-            Console.WriteLine();
-
-            Console.Write("Now breathe out");
-            for (int i = 0; i < 6; i++)
-            {
-                Thread.Sleep(1000);
-                Console.Write(".");
-            }
+            Console.Write("\nBreathe in...");
+            ShowCountDown(4);
+            Console.Write("\nNow breathe out...");
+            ShowCountDown(6);
             Console.WriteLine();
         }
 
@@ -99,133 +123,189 @@ public class BreathingActivity : Activity
     }
 }
 
-// Reflection activity
 public class ReflectionActivity : Activity
 {
-    private List<string> _prompts = new List<string>
-    {
-        "Think of a time when you stood up for someone else.",
-        "Think of a time when you did something really difficult.",
-        "Think of a time when you helped someone in need.",
-        "Think of a time when you did something truly selfless."
-    };
+    private List<string> _prompts;
+    private List<string> _questions;
+    private HashSet<int> _usedPrompts;
+    private HashSet<int> _usedQuestions;
 
-    private List<string> _questions = new List<string>
+    public ReflectionActivity() : base("Reflection Activity", 
+        "This activity will help you reflect on times in your life when you have shown strength and resilience. This will help you recognize the power you have and how you can use it in other aspects of your life.")
     {
-        "Why was this experience meaningful to you?",
-        "Have you ever done anything like this before?",
-        "How did you get started?",
-        "How did you feel when it was complete?",
-        "What made this time different than other times when you were not as successful?",
-        "What is your favorite thing about this experience?",
-        "What could you learn from this experience that applies to other situations?",
-        "What did you learn about yourself through this experience?",
-        "How can you keep this experience in mind in the future?"
-    };
+        InitializeLists();
+        _usedPrompts = new HashSet<int>();
+        _usedQuestions = new HashSet<int>();
+    }
 
-    public ReflectionActivity() : base("Reflection Activity", "This activity will help you reflect on times in your life when you have shown strength and resilience. This will help you recognize the power you have and how you can use it in other aspects of your life.")
+    private void InitializeLists()
     {
+        _prompts = new List<string>
+        {
+            "Think of a time when you stood up for someone else.",
+            "Think of a time when you did something really difficult.",
+            "Think of a time when you helped someone in need.",
+            "Think of a time when you did something truly selfless.",
+            "Think of a time when you overcame a significant challenge."
+        };
+
+        _questions = new List<string>
+        {
+            "Why was this experience meaningful to you?",
+            "Have you ever done anything like this before?",
+            "How did you get started?",
+            "How did you feel when it was complete?",
+            "What made this time different than other times when you were not as successful?",
+            "What is your favorite thing about this experience?",
+            "What could you learn from this experience that applies to other situations?",
+            "What did you learn about yourself through this experience?",
+            "How can you keep this experience in mind in the future?"
+        };
     }
 
     public override void Run()
     {
         Start();
 
-        Random rnd = new Random();
-        List<string> unusedPrompts = new List<string>(_prompts);
-        List<string> unusedQuestions = new List<string>(_questions);
+        Console.WriteLine("\nConsider the following prompt:\n");
+        string prompt = GetRandomPrompt();
+        Console.WriteLine($"--- {prompt} ---\n");
+        
+        Console.WriteLine("When you have something in mind, press enter to continue.");
+        Console.ReadLine();
 
-        string prompt = GetRandomItem(unusedPrompts);
-        Console.WriteLine(prompt);
-        ShowSpinner(5);
+        Console.WriteLine("\nNow ponder on each of the following questions as they relate to this experience.");
+        Console.Write("You may begin in: ");
+        ShowCountDown(5);
+        Console.Clear();
 
         DateTime endTime = DateTime.Now.AddSeconds(_duration);
         while (DateTime.Now < endTime)
         {
-            string question = GetRandomItem(unusedQuestions);
-            Console.WriteLine(question);
-            ShowSpinner(5);
-
-            if (unusedQuestions.Count == 0)
-            {
-                unusedQuestions = new List<string>(_questions);
-            }
+            string question = GetRandomQuestion();
+            Console.Write($"> {question} ");
+            ShowSpinner(10);
+            Console.WriteLine();
         }
 
         End();
     }
 
-    private string GetRandomItem(List<string> list)
+    private string GetRandomPrompt()
     {
-        Random rnd = new Random();
-        int index = rnd.Next(list.Count);
-        string item = list[index];
-        list.RemoveAt(index);
-        return item;
+        if (_usedPrompts.Count >= _prompts.Count)
+            _usedPrompts.Clear();
+
+        int index;
+        do
+        {
+            index = _random.Next(_prompts.Count);
+        } while (_usedPrompts.Contains(index));
+
+        _usedPrompts.Add(index);
+        return _prompts[index];
+    }
+
+    private string GetRandomQuestion()
+    {
+        if (_usedQuestions.Count >= _questions.Count)
+            _usedQuestions.Clear();
+
+        int index;
+        do
+        {
+            index = _random.Next(_questions.Count);
+        } while (_usedQuestions.Contains(index));
+
+        _usedQuestions.Add(index);
+        return _questions[index];
     }
 }
 
-// Listing activity
 public class ListingActivity : Activity
 {
-    private List<string> _prompts = new List<string>
-    {
-        "Who are people that you appreciate?",
-        "What are personal strengths of yours?",
-        "Who are people that you have helped this week?",
-        "When have you felt the Holy Ghost this month?",
-        "Who are some of your personal heroes?"
-    };
+    private List<string> _prompts;
+    private HashSet<int> _usedPrompts;
 
-    public ListingActivity() : base("Listing Activity", "This activity will help you reflect on the good things in your life by having you list as many things as you can in a certain area.")
+    public ListingActivity() : base("Listing Activity", 
+        "This activity will help you reflect on the good things in your life by having you list as many things as you can in a certain area.")
     {
+        InitializePrompts();
+        _usedPrompts = new HashSet<int>();
+    }
+
+    private void InitializePrompts()
+    {
+        _prompts = new List<string>
+        {
+            "Who are people that you appreciate?",
+            "What are personal strengths of yours?",
+            "Who are people that you have helped this week?",
+            "When have you felt the Holy Ghost this month?",
+            "Who are some of your personal heroes?",
+            "What are things you've accomplished this week?",
+            "What are small acts of kindness you've witnessed recently?"
+        };
     }
 
     public override void Run()
     {
         Start();
 
-        Random rnd = new Random();
-        string prompt = _prompts[rnd.Next(_prompts.Count)];
-        Console.WriteLine(prompt);
-        Console.WriteLine("You have a few seconds to think about it...");
+        string prompt = GetRandomPrompt();
+        Console.WriteLine("\nList as many responses as you can to the following prompt:");
+        Console.WriteLine($"--- {prompt} ---");
+        Console.Write("\nYou may begin in: ");
         ShowCountDown(5);
-        Console.WriteLine("Start listing items (press Enter after each item, type 'done' when finished):");
+        Console.WriteLine();
 
-        DateTime endTime = DateTime.Now.AddSeconds(_duration);
+        List<string> responses = GetListFromUser();
+        
+        Console.WriteLine($"\nYou listed {responses.Count} items!");
+
+        End();
+    }
+
+    private string GetRandomPrompt()
+    {
+        if (_usedPrompts.Count >= _prompts.Count)
+            _usedPrompts.Clear();
+
+        int index;
+        do
+        {
+            index = _random.Next(_prompts.Count);
+        } while (_usedPrompts.Contains(index));
+
+        _usedPrompts.Add(index);
+        return _prompts[index];
+    }
+
+    private List<string> GetListFromUser()
+    {
         List<string> items = new List<string>();
+        DateTime endTime = DateTime.Now.AddSeconds(_duration);
+
         while (DateTime.Now < endTime)
         {
-            string item = Console.ReadLine();
-            if (item.ToLower() == "done" || string.IsNullOrWhiteSpace(item))
+            Console.Write("> ");
+            string response = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(response))
             {
-                break;
+                items.Add(response);
             }
-            items.Add(item);
         }
 
-        Console.WriteLine($"You listed {items.Count} items:");
-        foreach (var item in items)
-        {
-            Console.WriteLine($"- {item}");
-        }
-        End();
+        return items;
     }
 }
 
-// Gratitude activity (new activity)
 public class GratitudeActivity : Activity
 {
-    private List<string> _prompts = new List<string>
-    {
-        "What are three things you're grateful for today?",
-        "Who is someone you're thankful to have in your life?",
-        "What's a small pleasure you often take for granted?",
-        "What's something in nature you appreciate?",
-        "What's a skill or ability you're grateful to have?"
-    };
+    private readonly string _journalFile = "gratitude_journal.txt";
 
-    public GratitudeActivity() : base("Gratitude Activity", "This activity will help you focus on the positive aspects of your life by expressing gratitude. It can improve your mood and overall well-being.")
+    public GratitudeActivity() : base("Gratitude Activity",
+        "This activity will help you cultivate gratitude by reflecting deeply on your blessings and recording them in a journal.")
     {
     }
 
@@ -233,69 +313,58 @@ public class GratitudeActivity : Activity
     {
         Start();
 
-        Random rnd = new Random();
-        string prompt = _prompts[rnd.Next(_prompts.Count)];
-        Console.WriteLine(prompt);
-        Console.WriteLine("Take a moment to think deeply about this...");
-        ShowSpinner(5);
+        DateTime endTime = DateTime.Now.AddSeconds(_duration);
+        List<string> entries = new List<string>();
 
-        Console.WriteLine("Now, write your thoughts (press Enter twice when you're done):");
-        string gratitudeEntry = "";
-        string line;
-        while (!string.IsNullOrWhiteSpace(line = Console.ReadLine()))
+        Console.WriteLine("\nTake a moment to write down things you're grateful for.");
+        Console.WriteLine("Press Enter after each entry. Double Enter to finish before the time is up.\n");
+
+        while (DateTime.Now < endTime)
         {
-            gratitudeEntry += line + "\n";
+            Console.Write($"Time remaining: {(endTime - DateTime.Now).Seconds} seconds > ");
+            string entry = Console.ReadLine();
+
+            if (string.IsNullOrWhiteSpace(entry))
+                break;
+
+            entries.Add(entry);
         }
 
-        SaveGratitudeEntry(gratitudeEntry);
+        SaveToJournal(entries);
+        Console.WriteLine($"\nYou recorded {entries.Count} gratitude entries!");
 
-        Console.WriteLine("Your gratitude entry has been saved.");
         End();
     }
 
-    private void SaveGratitudeEntry(string entry)
+    private void SaveToJournal(List<string> entries)
     {
-        string fileName = "gratitude_journal.txt";
-        using (StreamWriter writer = File.AppendText(fileName))
+        string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        List<string> journalEntry = new List<string>
         {
-            writer.WriteLine($"Date: {DateTime.Now}");
-            writer.WriteLine(entry);
-            writer.WriteLine(new string('-', 40));
-        }
+            $"\nGratitude Journal Entry - {timestamp}",
+            "----------------------------------------"
+        };
+        journalEntry.AddRange(entries.Select((entry, i) => $"{i + 1}. {entry}"));
+        journalEntry.Add("----------------------------------------\n");
+
+        File.AppendAllLines(_journalFile, journalEntry);
     }
 }
 
-// Main program
 class Program
 {
+    private static string ACTIVITY_LOG = "activity_log.txt";
+    
     static void Main(string[] args)
     {
-        // Exceeding requirements:
-        // 1. Added a new Gratitude activity to expand the mindfulness program
-        // 2. Implemented a gratitude journal feature that saves entries to a file
-        // 3. Enhanced the spinner animation with more visually appealing Unicode characters
-        // 4. Improved the breathing activity visualization with growing ellipsis
-        // 5. Added a feature to display listed items in the Listing activity
-        // 6. Implemented a system to ensure all prompts and questions are used before repeating in Reflection activity
-        // 7. Added error handling for duration input
-        // 8. Implemented a feature to track and display total mindfulness time across sessions
-
-        int totalMindfulnessTime = LoadTotalMindfulnessTime();
-
+        Dictionary<string, int> activityLog = LoadActivityLog();
+        
         while (true)
         {
             Console.Clear();
-            Console.WriteLine($"Total Mindfulness Time: {totalMindfulnessTime} seconds");
-            Console.WriteLine("Menu Options:");
-            Console.WriteLine("1. Start breathing activity");
-            Console.WriteLine("2. Start reflection activity");
-            Console.WriteLine("3. Start listing activity");
-            Console.WriteLine("4. Start gratitude activity");
-            Console.WriteLine("5. Quit");
-            Console.Write("Select a choice from the menu: ");
+            DisplayMenu(activityLog);
 
             string choice = Console.ReadLine();
-
             Activity activity = null;
 
             switch (choice)
@@ -313,36 +382,74 @@ class Program
                     activity = new GratitudeActivity();
                     break;
                 case "5":
-                    SaveTotalMindfulnessTime(totalMindfulnessTime);
+                    SaveActivityLog(activityLog);
                     return;
                 default:
-                    Console.WriteLine("Invalid choice. Please try again.");
+                    Console.WriteLine("\nInvalid choice. Please try again.");
+                    Thread.Sleep(2000);
                     continue;
             }
 
             Console.Clear();
             activity.Run();
-            totalMindfulnessTime += activity._duration;
+            UpdateActivityLog(activityLog, activity);
+            Console.WriteLine("\nPress any key to continue...");
+            Console.ReadKey();
         }
     }
 
-    static int LoadTotalMindfulnessTime()
+    private static void DisplayMenu(Dictionary<string, int> log)
     {
-        string fileName = "mindfulness_time.txt";
-        if (File.Exists(fileName))
+        Console.WriteLine("Mindfulness Program");
+        Console.WriteLine("==================");
+        Console.WriteLine("\nActivity Statistics:");
+        foreach (var entry in log)
         {
-            string timeString = File.ReadAllText(fileName);
-            if (int.TryParse(timeString, out int time))
+            Console.WriteLine($"{entry.Key}: {entry.Value} seconds total");
+        }
+        
+        Console.WriteLine("\nMenu Options:");
+        Console.WriteLine("1. Start breathing activity");
+        Console.WriteLine("2. Start reflection activity");
+        Console.WriteLine("3. Start listing activity");
+        Console.WriteLine("4. Start gratitude activity");
+        Console.WriteLine("5. Quit");
+        Console.Write("\nSelect a choice from the menu: ");
+    }
+
+    private static Dictionary<string, int> LoadActivityLog()
+    {
+        var log = new Dictionary<string, int>
+        {
+            {"Breathing Activity", 0},
+            {"Reflection Activity", 0},
+            {"Listing Activity", 0},
+            {"Gratitude Activity", 0}
+        };
+
+        if (File.Exists(ACTIVITY_LOG))
+        {
+            foreach (string line in File.ReadAllLines(ACTIVITY_LOG))
             {
-                return time;
+                string[] parts = line.Split(':');
+                if (parts.Length == 2 && int.TryParse(parts[1], out int duration))
+                {
+                    log[parts[0]] = duration;
+                }
             }
         }
-        return 0;
+
+        return log;
     }
 
-    static void SaveTotalMindfulnessTime(int time)
+    private static void SaveActivityLog(Dictionary<string, int> log)
     {
-        string fileName = "mindfulness_time.txt";
-        File.WriteAllText(fileName, time.ToString());
+        List<string> lines = log.Select(kvp => $"{kvp.Key}:{kvp.Value}").ToList();
+        File.WriteAllLines(ACTIVITY_LOG, lines);
     }
-}
+
+    private static void UpdateActivityLog(Dictionary<string, int> log, Activity activity)
+    {
+        log[activity.GetType().Name] = log[activity.GetType().Name] + activity.GetDuration();
+    }
+} 
